@@ -1,0 +1,606 @@
+@prefix : <http://linkedopendata.tw/water/> .
+@prefix org: <http://www.w3.org/ns/org#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix time: <https://www.w3.org/TR/owl-time/> .
+@prefix water: <http://linkedopendata.tw/water/> .
+@prefix qudt-1-1: <http://qudt.org/1.1/schema/qudt#> .
+@prefix qudt-unit-1-1: <http://qudt.org/1.1/vocab/unit#> .
+@base <http://linkedopendata.tw/water/> .
+
+<http://linkedopendata.tw/water/> rdf:type owl:Ontology ;
+                                   owl:versionIRI <http://linkedopendata.tw/water/0.1> .
+
+#################################################################
+#    Annotation properties
+#################################################################
+
+###  http://purl.org/dc/terms/description
+<http://purl.org/dc/terms/description> rdf:type owl:AnnotationProperty .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://linkedopendata.tw/water/contains
+water:contains rdf:type owl:ObjectProperty ;
+               rdfs:domain water:Watershed ;
+               rdfs:range water:Watershed .
+
+
+###  http://linkedopendata.tw/water/downStream
+water:downStream rdf:type owl:ObjectProperty ;
+                 rdfs:domain water:River ;
+                 rdfs:range water:River .
+
+
+###  http://linkedopendata.tw/water/isManagedBy
+water:isManagedBy rdf:type owl:ObjectProperty ;
+                  rdfs:domain sosa:Platform ;
+                  rdfs:range org:Organzation .
+
+
+###  http://linkedopendata.tw/water/isUsedFor
+water:isUsedFor rdf:type owl:ObjectProperty ;
+                rdfs:domain water:HydrologicalStation ;
+                rdfs:range water:WaterBody .
+
+
+###  http://linkedopendata.tw/water/is_in
+water:is_in rdf:type owl:ObjectProperty ;
+            rdfs:domain sosa:Platform ;
+            rdfs:range water:Watershed .
+
+
+###  http://linkedopendata.tw/water/manages
+water:manages rdf:type owl:ObjectProperty ;
+              rdfs:domain org:Organzation ;
+              rdfs:range water:Reservoir ,
+                         water:River ,
+                         water:Watershed .
+
+
+###  http://linkedopendata.tw/water/touches
+water:touches rdf:type owl:ObjectProperty ;
+              rdfs:domain water:Watershed ;
+              rdfs:range water:Watershed .
+
+
+###  http://linkedopendata.tw/water/upStream
+water:upStream rdf:type owl:ObjectProperty ;
+               rdfs:domain water:River ;
+               rdfs:range water:River .
+
+
+###  http://www.w3.org/ns/org#hasUnit
+org:hasUnit rdf:type owl:ObjectProperty ;
+            owl:inverseOf org:unitOf ;
+            rdfs:domain org:Organzation ;
+            rdfs:range org:OrganizationUnit .
+
+
+###  http://www.w3.org/ns/org#unitOf
+org:unitOf rdf:type owl:ObjectProperty ;
+           rdfs:domain org:OrganizationUnit ;
+           rdfs:range org:Organzation .
+
+
+###  http://www.w3.org/ns/sosa/hasFeatureOfInterest
+sosa:hasFeatureOfInterest rdf:type owl:ObjectProperty ;
+                          rdfs:domain sosa:Observation ;
+                          rdfs:range sosa:FeatureOfInterest .
+
+
+###  http://www.w3.org/ns/sosa/hasResult
+sosa:hasResult rdf:type owl:ObjectProperty ;
+               rdfs:domain sosa:Observation ;
+               rdfs:range sosa:Result .
+
+
+###  http://www.w3.org/ns/sosa/hosts
+sosa:hosts rdf:type owl:ObjectProperty ;
+           owl:inverseOf sosa:isHostedBy ;
+           rdfs:domain sosa:Platform ;
+           rdfs:range sosa:Sensor .
+
+
+###  http://www.w3.org/ns/sosa/isHostedBy
+sosa:isHostedBy rdf:type owl:ObjectProperty ;
+                rdfs:domain sosa:Sensor ;
+                rdfs:range sosa:Platform .
+
+
+###  http://www.w3.org/ns/sosa/madeBySensor
+sosa:madeBySensor rdf:type owl:ObjectProperty ;
+                  rdfs:domain sosa:Observation ;
+                  rdfs:range sosa:Sensor .
+
+
+###  http://www.w3.org/ns/sosa/madeObservation
+sosa:madeObservation rdf:type owl:ObjectProperty ;
+                     rdfs:domain sosa:Sensor ;
+                     rdfs:range sosa:Observation .
+
+
+###  http://www.w3.org/ns/sosa/observedProperty
+sosa:observedProperty rdf:type owl:ObjectProperty ;
+                      rdfs:domain sosa:Observation ;
+                      rdfs:range sosa:ObservableProperty .
+
+
+###  http://www.w3.org/ns/sosa/observes
+sosa:observes rdf:type owl:ObjectProperty ;
+              rdfs:domain sosa:Sensor ;
+              rdfs:range sosa:ObservableProperty .
+
+
+###  http://www.w3.org/ns/sosa/phenomenonTime
+sosa:phenomenonTime rdf:type owl:ObjectProperty ;
+                    rdfs:domain sosa:Observation ;
+                    rdfs:range time:TemporalEntity .
+
+
+###  http://www.w3.org/ns/sosa/usedProcedure
+sosa:usedProcedure rdf:type owl:ObjectProperty ;
+                   rdfs:domain sosa:Observation ;
+                   rdfs:range sosa:Procedure .
+
+
+###  http://www.w3.org/ns/ssn/detects
+ssn:detects rdf:type owl:ObjectProperty ;
+            rdfs:domain sosa:Sensor ;
+            rdfs:range ssn:Stimulus .
+
+
+###  http://www.w3.org/ns/ssn/implements
+ssn:implements rdf:type owl:ObjectProperty .
+
+
+###  http://www.w3.org/ns/ssn/wasOriginatedBy
+ssn:wasOriginatedBy rdf:type owl:ObjectProperty ;
+                    rdfs:domain sosa:Observation ;
+                    rdfs:range ssn:Stimulus .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://linkedopendata.tw/water/address
+water:address rdf:type owl:DatatypeProperty ;
+              rdfs:domain sosa:Platform ;
+              rdfs:range xsd:string .
+
+
+###  http://linkedopendata.tw/water/altitude
+water:altitude rdf:type owl:DatatypeProperty ;
+               rdfs:domain sosa:Platform ;
+               rdfs:range xsd:decimal .
+
+
+###  http://linkedopendata.tw/water/eng_name
+water:eng_name rdf:type owl:DatatypeProperty .
+
+
+###  http://linkedopendata.tw/water/hasID
+water:hasID rdf:type owl:DatatypeProperty ;
+            rdfs:domain owl:Thing ;
+            rdfs:range xsd:string .
+
+
+###  http://linkedopendata.tw/water/in_county
+water:in_county rdf:type owl:DatatypeProperty ;
+                rdfs:domain sosa:Platform ;
+                rdfs:range xsd:string .
+
+
+###  http://linkedopendata.tw/water/latitude
+water:latitude rdf:type owl:DatatypeProperty ;
+               rdfs:domain sosa:Platform ;
+               rdfs:range xsd:decimal .
+
+
+###  http://linkedopendata.tw/water/longitude
+water:longitude rdf:type owl:DatatypeProperty ;
+                rdfs:domain sosa:Platform ;
+                rdfs:range xsd:decimal .
+
+
+###  http://linkedopendata.tw/water/name
+water:name rdf:type owl:DatatypeProperty ;
+           rdfs:domain owl:Thing ;
+           rdfs:range xsd:string .
+
+
+###  http://linkedopendata.tw/water/twd97_x
+water:twd97_x rdf:type owl:DatatypeProperty ;
+              rdfs:domain sosa:Platform ;
+              rdfs:range xsd:decimal .
+
+
+###  http://linkedopendata.tw/water/twd97_y
+water:twd97_y rdf:type owl:DatatypeProperty ;
+              rdfs:domain sosa:Platform ;
+              rdfs:range xsd:decimal .
+
+
+###  http://qudt.org/1.1/schema/qudt#numericalValue
+qudt-1-1:numericalValue rdf:type owl:DatatypeProperty ;
+                        rdfs:domain sosa:Result ;
+                        rdfs:range xsd:decimal .
+
+
+###  http://qudt.org/1.1/schema/qudt#unit
+qudt-1-1:unit rdf:type owl:DatatypeProperty ;
+              rdfs:domain sosa:Result ;
+              rdfs:range xsd:string .
+
+
+###  http://www.w3.org/ns/sosa/hasSimpleResult
+sosa:hasSimpleResult rdf:type owl:DatatypeProperty ;
+                     rdfs:domain sosa:Observation ;
+                     rdfs:range xsd:string .
+
+
+###  http://www.w3.org/ns/sosa/resultTime
+sosa:resultTime rdf:type owl:DatatypeProperty ;
+                rdfs:domain sosa:Observation ;
+                rdfs:range xsd:dateTime .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://linkedopendata.tw/water/HydrologicalStation
+water:HydrologicalStation rdf:type owl:Class ;
+                          rdfs:subClassOf sosa:Platform ;
+                          rdfs:label "水文站" .
+
+
+###  http://linkedopendata.tw/water/RainGauge
+water:RainGauge rdf:type owl:Class ;
+                rdfs:subClassOf sosa:Sensor .
+
+
+###  http://linkedopendata.tw/water/Reservoir
+water:Reservoir rdf:type owl:Class ;
+                rdfs:subClassOf water:WaterBody ;
+                rdfs:label "水庫" .
+
+
+###  http://linkedopendata.tw/water/River
+water:River rdf:type owl:Class ;
+            rdfs:subClassOf water:WaterBody ;
+            rdfs:label "河流" .
+
+
+###  http://linkedopendata.tw/water/RiverProfile
+water:RiverProfile rdf:type owl:Class ;
+                   <http://purl.org/dc/terms/description> "討論過後，目前暫不處理這個" ;
+                   rdfs:label "河川大斷面" .
+
+
+###  http://linkedopendata.tw/water/SedimentLoadMeter
+water:SedimentLoadMeter rdf:type owl:Class ;
+                        rdfs:subClassOf sosa:Sensor .
+
+
+###  http://linkedopendata.tw/water/UndergroundWaterGauge
+water:UndergroundWaterGauge rdf:type owl:Class ;
+                            rdfs:subClassOf sosa:Sensor .
+
+
+###  http://linkedopendata.tw/water/UndergroundWaterWell
+water:UndergroundWaterWell rdf:type owl:Class ;
+                           rdfs:subClassOf sosa:Platform ;
+                           rdfs:label "地下水井" .
+
+
+###  http://linkedopendata.tw/water/WaterBody
+water:WaterBody rdf:type owl:Class ;
+                rdfs:subClassOf sosa:FeatureOfInterest ;
+                rdfs:label "水體" .
+
+
+###  http://linkedopendata.tw/water/WaterFlowMeter
+water:WaterFlowMeter rdf:type owl:Class ;
+                     rdfs:subClassOf sosa:Sensor .
+
+
+###  http://linkedopendata.tw/water/WaterLevelGauge
+water:WaterLevelGauge rdf:type owl:Class ;
+                      rdfs:subClassOf sosa:Sensor .
+
+
+###  http://linkedopendata.tw/water/Watershed
+water:Watershed rdf:type owl:Class ;
+                rdfs:label "集水區" .
+
+
+###  http://linkedopendata.tw/water/WeatherStation
+water:WeatherStation rdf:type owl:Class ;
+                     rdfs:subClassOf sosa:Platform ;
+                     rdfs:label "氣象站" .
+
+
+###  http://www.w3.org/ns/org#OrganizationUnit
+org:OrganizationUnit rdf:type owl:Class ;
+                     rdfs:subClassOf org:Organzation ;
+                     rdfs:label "組織單位" .
+
+
+###  http://www.w3.org/ns/org#Organzation
+org:Organzation rdf:type owl:Class ;
+                <http://purl.org/dc/terms/description> """為W3C所發展，用於架構(政府)組織的標準語彙，https://www.w3.org/TR/vocab-org/
+台灣政府單位的編號以國發會的「政府機關唯一識別代碼(OID)」為主
+https://data.gov.tw/dataset/7081""" ;
+                rdfs:label "組織" .
+
+
+###  http://www.w3.org/ns/sosa/FeatureOfInterest
+sosa:FeatureOfInterest rdf:type owl:Class ;
+                       <http://purl.org/dc/terms/description> "用於描述觀測的目標，例如，河川、水庫" ;
+                       rdfs:label "感興趣的特徵" .
+
+
+###  http://www.w3.org/ns/sosa/ObservableProperty
+sosa:ObservableProperty rdf:type owl:Class ;
+                        <http://purl.org/dc/terms/description> "用來說明感測器所觀測的目標之屬性，例如，水位、含沙量、流量" ;
+                        rdfs:label "觀測屬性" .
+
+
+###  http://www.w3.org/ns/sosa/Observation
+sosa:Observation rdf:type owl:Class ;
+                 <http://purl.org/dc/terms/description> """感測器所度量到的觀測，可由sosa:hasSimpleResult或sosa:hasResult來描述量測結果，不一樣的地方是，sosa:hasSimpleResult是一個資料屬性(data property)，是由字串(string)描述，數值和單位會混在一起，例如，\"2.2 m\"，而sosa:hasResult是一個物件屬性(object property)，會由一個Result的實例(instance)所描述，因此可區分數值與單位，例如，
+  sosa:hasResult [ 
+    qudt-1-1:unit qudt-unit-1-1:Meter ; 
+    qudt-1-1:numericalValue \"2.2\"^^xsd:decimal]""" ;
+                 rdfs:label "觀測" .
+
+
+###  http://www.w3.org/ns/sosa/Platform
+sosa:Platform rdf:type owl:Class ;
+              <http://purl.org/dc/terms/description> "安裝感測器的平台，例如，水文站、氣象站等，一個觀測站中都會裝有不同的感測器，以量測不同對象" ;
+              rdfs:label "平台" .
+
+
+###  http://www.w3.org/ns/sosa/Procedure
+sosa:Procedure rdf:type owl:Class ;
+               rdfs:label "程序" .
+
+
+###  http://www.w3.org/ns/sosa/Result
+sosa:Result rdf:type owl:Class ;
+            rdfs:label "觀測結果" .
+
+
+###  http://www.w3.org/ns/sosa/Sensor
+sosa:Sensor rdf:type owl:Class ;
+            rdfs:subClassOf ssn:System ;
+            rdfs:label "感測器" .
+
+
+###  http://www.w3.org/ns/ssn/Stimulus
+ssn:Stimulus rdf:type owl:Class ;
+             <http://purl.org/dc/terms/description> "意指啟動感測器量測的現象" ;
+             rdfs:label "刺激" .
+
+
+###  http://www.w3.org/ns/ssn/System
+ssn:System rdf:type owl:Class ;
+           rdfs:label "系統" .
+
+
+###  https://www.w3.org/TR/owl-time/TemporalEntity
+time:TemporalEntity rdf:type owl:Class ;
+                    rdfs:label "時間實體" .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  http://linkedopendata.tw/water/result_001
+water:result_001 rdf:type owl:NamedIndividual ,
+                          sosa:Result ;
+                 qudt-1-1:numericalValue 2.2 ;
+                 qudt-1-1:unit "qudt-unit-1-1:Meter" .
+
+
+###  http://linkedopendata.tw/water/hydrologicalStation/Neimaopu
+<http://linkedopendata.tw/water/hydrologicalStation/Neimaopu> rdf:type owl:NamedIndividual ,
+                                                                       water:HydrologicalStation ;
+                                                              water:isManagedBy <http://linkedopendata.tw/water/org/313200000G> ;
+                                                              water:isUsedFor <http://linkedopendata.tw/water/river/ZhuoshuiRiver> ;
+                                                              water:is_in <http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> ;
+                                                              sosa:hosts <http://linkedopendata.tw/water/sedimentLoadMeter/1510H049> ,
+                                                                         <http://linkedopendata.tw/water/waterFlowMeter/1510H049> ,
+                                                                         <http://linkedopendata.tw/water/waterLevelGauge/1510H049> ;
+                                                              water:address "南投縣信義鄉愛國大橋" ;
+                                                              water:altitude 485.12 ;
+                                                              water:hasID "1510H049" ;
+                                                              water:in_county "南投縣" ;
+                                                              water:twd97_x 234809.57 ;
+                                                              water:twd97_y 2621239.23 ;
+                                                              rdfs:label "內茅埔水文站"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/observation/20191208_151P049
+<http://linkedopendata.tw/water/observation/20191208_151P049> rdf:type owl:NamedIndividual ,
+                                                                       sosa:Observation ;
+                                                              sosa:hasFeatureOfInterest <http://linkedopendata.tw/water/river/ChenyoulanRiver> ;
+                                                              sosa:hasResult water:result_001 ;
+                                                              sosa:madeBySensor <http://linkedopendata.tw/water/waterLevelGauge/1510H049> ;
+                                                              sosa:hasSimpleResult "2m"^^xsd:string ;
+                                                              sosa:resultTime "2019-12-08T14:30:00"^^xsd:dateTime ;
+                                                              rdfs:label "observation#20191208_151P049"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/org/313200000G
+<http://linkedopendata.tw/water/org/313200000G> rdf:type owl:NamedIndividual ,
+                                                         org:Organzation ;
+                                                org:hasUnit <http://linkedopendata.tw/water/org/313201400G> ;
+                                                water:name "水利署"^^xsd:string ;
+                                                rdfs:label "經濟部水利署" .
+
+
+###  http://linkedopendata.tw/water/org/313201400G
+<http://linkedopendata.tw/water/org/313201400G> rdf:type owl:NamedIndividual ,
+                                                         org:OrganizationUnit ;
+                                                water:isManagedBy <http://linkedopendata.tw/water/org/313201400G> ;
+                                                water:manages <http://linkedopendata.tw/water/river/ChenyoulanRiver> ,
+                                                              <http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> ;
+                                                org:unitOf <http://linkedopendata.tw/water/org/313200000G> ;
+                                                rdfs:label "經濟部水利署第四河川局" .
+
+
+###  http://linkedopendata.tw/water/property/Rainfall
+<http://linkedopendata.tw/water/property/Rainfall> rdf:type owl:NamedIndividual ,
+                                                            sosa:ObservableProperty ;
+                                                   rdfs:label "雨量" .
+
+
+###  http://linkedopendata.tw/water/property/SedimentLoad
+<http://linkedopendata.tw/water/property/SedimentLoad> rdf:type owl:NamedIndividual ,
+                                                                sosa:ObservableProperty ;
+                                                       rdfs:label "含沙量" .
+
+
+###  http://linkedopendata.tw/water/property/UndergroudWaterLevel
+<http://linkedopendata.tw/water/property/UndergroudWaterLevel> rdf:type owl:NamedIndividual ,
+                                                                        sosa:ObservableProperty ;
+                                                               rdfs:label "地下水位" .
+
+
+###  http://linkedopendata.tw/water/property/WaterFlow
+<http://linkedopendata.tw/water/property/WaterFlow> rdf:type owl:NamedIndividual ,
+                                                             sosa:ObservableProperty ;
+                                                    rdfs:label "流量"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/property/WaterLevel
+<http://linkedopendata.tw/water/property/WaterLevel> rdf:type owl:NamedIndividual ,
+                                                              sosa:ObservableProperty ;
+                                                     rdfs:label "水位"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/rainGauge/1510P046
+<http://linkedopendata.tw/water/rainGauge/1510P046> rdf:type owl:NamedIndividual ,
+                                                             water:RainGauge ;
+                                                    sosa:isHostedBy <http://linkedopendata.tw/water/weatherStation/ChiChi(2)> ;
+                                                    sosa:observes <http://linkedopendata.tw/water/property/Rainfall> ;
+                                                    water:hasID "1510P046" ;
+                                                    rdfs:label "151P046 雨量計 集集(2)"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/reservoir/WusheReservoir
+<http://linkedopendata.tw/water/reservoir/WusheReservoir> rdf:type owl:NamedIndividual ,
+                                                                   water:Reservoir ;
+                                                          rdfs:label "霧社水庫" .
+
+
+###  http://linkedopendata.tw/water/river/ChenyoulanRiver
+<http://linkedopendata.tw/water/river/ChenyoulanRiver> rdf:type owl:NamedIndividual ,
+                                                                water:River ;
+                                                       water:downStream <http://linkedopendata.tw/water/river/ZhuoshuiRiver> ;
+                                                       water:is_in <http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> ;
+                                                       water:eng_name "Chenyoulan River"^^xsd:string ;
+                                                       water:name "陳有蘭溪"^^xsd:string ;
+                                                       rdfs:label "陳有蘭溪"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/river/HesheRiver
+<http://linkedopendata.tw/water/river/HesheRiver> rdf:type owl:NamedIndividual ,
+                                                           water:River ;
+                                                  water:downStream <http://linkedopendata.tw/water/river/ChenyoulanRiver> ;
+                                                  water:is_in <http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> ;
+                                                  water:eng_name "Heshe River"^^xsd:string ;
+                                                  water:name "和社溪"^^xsd:string ;
+                                                  rdfs:label "和社溪"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/river/ZhuoshuiRiver
+<http://linkedopendata.tw/water/river/ZhuoshuiRiver> rdf:type owl:NamedIndividual ,
+                                                              water:River ;
+                                                     water:is_in <http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> ;
+                                                     water:upStream <http://linkedopendata.tw/water/river/ChenyoulanRiver> ;
+                                                     water:eng_name "Zhuoshui River"^^xsd:string ;
+                                                     water:name "濁水溪"^^xsd:string ;
+                                                     <http://purl.org/dc/terms/description> "濁水溪，發源於合歡山主峰與東峰間的「左久間鞍部」，大約在標高3200公尺處，其最上游為霧社溪，係集合歡山西坡之水，沿縱谷流下，至廬山附近與塔羅灣溪匯流，至萬大附近與萬大溪合流，再併入丹大溪、巒大溪、郡大溪、水里溪、陳有蘭溪等支流。其下河谷漸漸開闊，於集集盆地再納清水溝溪、東埔蚋溪與清水溪後流入彰雲平原。並於彰化縣大城鄉的下海墘村與雲林縣麥寮鄉許厝寮之間流入台灣海峽，全長186.6公里，為全台灣最長的一條河。"@zh-tw ;
+                                                     rdfs:label "濁水溪"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/sedimentLoadMeter/1510H049
+<http://linkedopendata.tw/water/sedimentLoadMeter/1510H049> rdf:type owl:NamedIndividual ,
+                                                                     water:SedimentLoadMeter ;
+                                                            sosa:isHostedBy <http://linkedopendata.tw/water/hydrologicalStation/Neimaopu> ;
+                                                            sosa:observes <http://linkedopendata.tw/water/property/SedimentLoad> ;
+                                                            water:hasID "1510H049" ;
+                                                            rdfs:label "1510H049 水位計 內茅埔"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/undergroundWaterLevelGauge/08040212
+<http://linkedopendata.tw/water/undergroundWaterLevelGauge/08040212> rdf:type owl:NamedIndividual ,
+                                                                              water:UndergroundWaterGauge ;
+                                                                     sosa:isHostedBy <http://linkedopendata.tw/water/undergroundWaterWell/Guoshen(1)> ;
+                                                                     sosa:observes <http://linkedopendata.tw/water/property/UndergroudWaterLevel> ;
+                                                                     water:hasID 08040212 ;
+                                                                     rdfs:label "08040212 地下水位計"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/undergroundWaterWell/Guoshen(1)
+<http://linkedopendata.tw/water/undergroundWaterWell/Guoshen(1)> rdf:type owl:NamedIndividual ,
+                                                                          water:UndergroundWaterWell .
+
+
+###  http://linkedopendata.tw/water/waterFlowMeter/1510H049
+<http://linkedopendata.tw/water/waterFlowMeter/1510H049> rdf:type owl:NamedIndividual ,
+                                                                  water:WaterFlowMeter ;
+                                                         sosa:isHostedBy <http://linkedopendata.tw/water/hydrologicalStation/Neimaopu> ;
+                                                         sosa:observes <http://linkedopendata.tw/water/property/WaterFlow> ;
+                                                         water:hasID "1510H049" ;
+                                                         rdfs:label "1510H049 流量計 內茅埔"@zh-tw .
+
+
+###  http://linkedopendata.tw/water/waterLevelGauge/1510H049
+<http://linkedopendata.tw/water/waterLevelGauge/1510H049> rdf:type owl:NamedIndividual ,
+                                                                   water:WaterLevelGauge ;
+                                                          sosa:isHostedBy <http://linkedopendata.tw/water/hydrologicalStation/Neimaopu> ;
+                                                          sosa:madeObservation <http://linkedopendata.tw/water/observation/20191208_151P049> ;
+                                                          sosa:observes <http://linkedopendata.tw/water/property/WaterLevel> ;
+                                                          water:hasID "1510H049" ;
+                                                          rdfs:label "1510H049 水位計 內茅埔"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed
+<http://linkedopendata.tw/water/watershed/ZhuoshuiWatershed> rdf:type owl:NamedIndividual ,
+                                                                      water:Watershed ;
+                                                             water:hasID "151000"^^xsd:string ;
+                                                             water:name "濁水溪流域"^^xsd:string ;
+                                                             rdfs:label "濁水溪流域"^^xsd:string .
+
+
+###  http://linkedopendata.tw/water/weatherStation/ChiChi(2)
+<http://linkedopendata.tw/water/weatherStation/ChiChi(2)> rdf:type owl:NamedIndividual ,
+                                                                   water:WeatherStation ;
+                                                          water:isManagedBy <http://linkedopendata.tw/water/org/313201400G> ;
+                                                          water:is_in <http://linkedopendata.tw/water/river/ZhuoshuiRiver> ;
+                                                          sosa:hosts <http://linkedopendata.tw/water/rainGauge/1510P046> ;
+                                                          water:address "南投縣集集鎮林尾里公館巷3號" ;
+                                                          water:altitude 251 ;
+                                                          water:hasID "1510P046" ;
+                                                          water:in_county "南投縣" ;
+                                                          water:name "集集(2)" ;
+                                                          water:twd97_x 227066.45 ;
+                                                          water:twd97_y 2635803.06 ;
+                                                          rdfs:label "集集(2)氣象站"@zh-tw .
+
+
+###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
