@@ -64,3 +64,67 @@ ORDER BY DESC(?length)
     plt.title(label.capitalize())
     plt.yticks(fontname = 'SimSun',size=8)
     plt.show()
+
+#河川代碼: https://data.gov.tw/dataset/22228
+#https://data.wra.gov.tw/Service/OpenData.aspx?format=json&id=336F84F7-7CFF-4084-9698-813DD1A916FE
+#~/Downloads/336F84F7-7CFF-4084-9698-813DD1A916FE.json
+# 一條河的資訊： Id    Name    EName GId ToId
+#BasinIdentifier    
+#BasinName    
+#EnglishBasinName    
+#EnglishSubsidiaryBasinName    
+#EnglishSubSubsidiaryBasinName    
+#EnglishSubSubSubsidiaryBasinName    
+#GovernmentUnitIdentifier    
+#Remarks    
+#SubsidiaryBasinIdentifier    
+#SubsidiaryBasinName    
+#SubSubsidiaryBasinIdentifier    
+#SubSubsidiaryBasinName    
+#SubSubSubsidiaryBasinIdentifier    
+#SubSubSubsidiaryBasinName 
+
+def opendata_getbynet():
+    import requests
+    url = 'https://data.wra.gov.tw/Service/OpenData.aspx'
+    r = requests.get(url, verify=False, params = {'format': 'json', 'id': '336F84F7-7CFF-4084-9698-813DD1A916FE'})
+    r.encoding = "utf-8-sig"
+    data = r.json()
+    print(data)
+       
+def opendata_get():
+    title=[
+        ['BasinIdentifier','BasinName','EnglishBasinName'],
+        ['SubsidiaryBasinIdentifier','SubsidiaryBasinName','EnglishSubsidiaryBasinName'],
+        ['SubSubsidiaryBasinIdentifier','SubSubsidiaryBasinName','EnglishSubSubsidiaryBasinName'],
+        ['SubSubSubsidiaryBasinIdentifier','SubSubSubsidiaryBasinName','EnglishSubSubSubsidiaryBasinName']
+        ]
+
+    
+    import json
+    with open('include/336F84F7-7CFF-4084-9698-813DD1A916FE.json' , 'r',encoding='utf-8-sig') as json_file:
+        data = json.load(json_file)
+    
+    #print(data)
+    #print(title)
+    rivers = {} # Id,[name, EName, ToId]
+    for item in data['RiverCode_OPENDATA']:
+        #print(item)
+        #print(item['SubsidiaryBasinName'])
+        GId=item['GovernmentUnitIdentifier'].strip() 
+        preId="0" # ocean
+        for i in range(4):
+            
+            if not item[title[i][0]]=="":
+                Id=item[title[i][0]].strip()     
+                Name=item[title[i][1]].strip()    
+                EName=item[title[i][2]].strip() 
+                ToId=preId
+                
+                if not Id in rivers:
+                    rivers[Id] = [Name,EName,ToId,GId]
+                preId = Id
+    print("%10s,%20s,%20s,%10s,%10s" % ('Id','Name','EName','ToId','GId'))
+    for id in sorted(rivers.keys()):
+        print("%10s,%20s,%20s,%10s,%10s" %(id,rivers[id][0],rivers[id][1],rivers[id][2],rivers[id][3]))    
+    print("river count=%i" %(len(rivers)))

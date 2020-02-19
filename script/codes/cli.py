@@ -56,7 +56,7 @@ class Cli(cmd.Cmd):
 
     def do_simple(self, line):
         """simple test routine"""
-        simple.wikidata_get()
+        simple.opendata_get()
     
     def do_about(self, line):
         """About this software"""
