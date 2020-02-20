@@ -45,11 +45,14 @@ ORDER BY DESC(?length)
                 if 'river_length' in item else None
                 }))
     
+    
     df = pd.DataFrame(rivers)
-    df.set_index('riverLabel', inplace=True)
+    df.set_index('river', inplace=True)
     df = df.astype({'river_length': float})
     df.sort_values(by=['river_length'], inplace=True,ascending=False)
-    print(df)
+    #print(df)
+    return df
+    
     
     #%matplotlib notebook
     import matplotlib.pyplot as plt
@@ -91,22 +94,20 @@ def opendata_getbynet():
     r.encoding = "utf-8-sig"
     data = r.json()
     print(data)
-       
+
+#河川代碼: https://data.gov.tw/dataset/22228       
 def opendata_get():
-    title=[
-        ['BasinIdentifier','BasinName','EnglishBasinName'],
+    title=[['BasinIdentifier','BasinName','EnglishBasinName'],
         ['SubsidiaryBasinIdentifier','SubsidiaryBasinName','EnglishSubsidiaryBasinName'],
         ['SubSubsidiaryBasinIdentifier','SubSubsidiaryBasinName','EnglishSubSubsidiaryBasinName'],
-        ['SubSubSubsidiaryBasinIdentifier','SubSubSubsidiaryBasinName','EnglishSubSubSubsidiaryBasinName']
-        ]
+        ['SubSubSubsidiaryBasinIdentifier','SubSubSubsidiaryBasinName','EnglishSubSubSubsidiaryBasinName']]
+    #print(title)
 
-    
     import json
     with open('include/336F84F7-7CFF-4084-9698-813DD1A916FE.json' , 'r',encoding='utf-8-sig') as json_file:
         data = json.load(json_file)
-    
     #print(data)
-    #print(title)
+
     rivers = {} # Id,[name, EName, ToId]
     for item in data['RiverCode_OPENDATA']:
         #print(item)
@@ -114,7 +115,6 @@ def opendata_get():
         GId=item['GovernmentUnitIdentifier'].strip() 
         preId="0" # ocean
         for i in range(4):
-            
             if not item[title[i][0]]=="":
                 Id=item[title[i][0]].strip()     
                 Name=item[title[i][1]].strip()    
@@ -124,7 +124,32 @@ def opendata_get():
                 if not Id in rivers:
                     rivers[Id] = [Name,EName,ToId,GId]
                 preId = Id
+                
     print("%10s,%20s,%20s,%10s,%10s" % ('Id','Name','EName','ToId','GId'))
     for id in sorted(rivers.keys()):
         print("%10s,%20s,%20s,%10s,%10s" %(id,rivers[id][0],rivers[id][1],rivers[id][2],rivers[id][3]))    
     print("river count=%i" %(len(rivers)))
+    return rivers
+
+# river info compare from opendata diff with wikidata
+def river_comapre():
+    opendata = opendata_get()
+    
+    opendata_rivername = [opendata[x][0] for x in opendata]
+    #print(opendata_rivername)
+    
+     
+    wikidata = wikidata_get()
+    #print(list(wikidata['riverLabel']))
+     
+    wikidata_rivername = list(wikidata['riverLabel'])
+    
+    #in opendata_rivername but not in wikidata_rivername
+    diff_set = set(opendata_rivername).difference(set(wikidata_rivername))
+    print("---in opendata_rivername but not in wikidata_rivername---")
+    print( "\n".join(diff_set))
+
+    #in wikidata_rivername but not in opendata_rivername
+    diff_set = set(wikidata_rivername).difference(set(opendata_rivername))
+    print("---in wikidata_rivername but not in opendata_rivername---")
+    print( "\n".join(diff_set))
