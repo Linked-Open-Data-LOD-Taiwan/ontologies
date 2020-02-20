@@ -57,12 +57,23 @@ class Cli(cmd.Cmd):
     def do_simple(self, line):
         """simple test routine"""
         
-        simple.river_tree()
+        simple.river_tree("0")
         #simple.river_comapre()
         #simple.opendata_get()
         #simple.opendata_getbynet()
         #simple.wikidata_get()
-    
+    def do_rivertree(self, line):
+        """river tree trace
+            rivertree [river_id] 
+            river_id example: 151000_濁水溪,114000_淡水河
+            ex: rivertree 0
+        """
+        river_id=0
+        pars=line.split()
+        if len(pars)==1:
+            river_id = pars[0]
+        
+        simple.river_tree(river_id)    
     def do_about(self, line):
         """About this software"""
         print("%s version: v%s" %(WKG_TITLE,WKG_VERSION))

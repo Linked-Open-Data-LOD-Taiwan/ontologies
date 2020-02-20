@@ -144,19 +144,40 @@ digraph G {
   a3 -> a0;
 }
 """
-def river_tree():
+def river_tree(tree_id = "0"):
     rivers = opendata_get()
+    if not tree_id == "0" and (not tree_id in rivers):
+        print("tree_id not exist!")
+        return 
     dot_str="digraph G {\n"
-    for key in sorted(rivers.keys()):
+    if tree_id=="0":
+        sorted_key = sorted(rivers.keys())
+    else: # single river
+        child_rivers =[tree_id]
+        river_findtree(rivers,child_rivers,tree_id)
+        #print(child_rivers)
+        sorted_key = sorted(child_rivers)
+
+    for key in sorted_key:
         toid = rivers[key][2]
         if toid =="0":
-            gname = "0_海"
+            gname = "GovID=%s" %(rivers[key][3])
         else:
             gname = "%s_%s" % (toid,rivers[toid][0])
         dot_str += "\t\"%s_%s\" -> \"%s\";\n" %(key,rivers[key][0],gname )
+
     dot_str += "}"
 
     print(dot_str)
+    
+def river_findtree(rivers, child_rivers, river_id = "0"):
+    for key in rivers.keys():
+        if rivers[key][2]==river_id:
+            river_findtree(rivers,child_rivers,key)
+            child_rivers.append(key)
+    
+
+            
 # river info compare from opendata diff with wikidata
 def river_comapre():
     
