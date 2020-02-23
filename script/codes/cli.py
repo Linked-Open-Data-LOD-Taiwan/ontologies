@@ -11,6 +11,7 @@ import cmd
 import lib.globalclasses as gc
 from lib.const import *
 import codes.simple as simple
+from codes.opendata import *
 
 ##### Code section #####
 #Spec: local variable maintain, about, user commands, test commands
@@ -57,7 +58,7 @@ class Cli(cmd.Cmd):
     def do_simple(self, line):
         """simple test routine"""
         
-        simple.river_tree("0")
+        simple.opendata_colmap()
         #simple.river_comapre()
         #simple.opendata_get()
         #simple.opendata_getbynet()
@@ -73,7 +74,36 @@ class Cli(cmd.Cmd):
         if len(pars)==1:
             river_id = pars[0]
         
-        simple.river_tree(river_id)    
+        simple.river_tree(river_id)  
+    def do_dataset(self,line):
+        """get dataset and display head
+            dataset [dataset_id,] [dataset_id] ...
+            ex: dataset 22228
+        """
+        dataset_id="22228"
+        pars=line.split()
+        if len(pars)==0:
+            pars = [dataset_id]
+
+        odMgr = OpenDataMgr()
+        for par in pars:
+            
+            df = odMgr.get_dataset(int(par))
+            #df = odMgr.od_df['df'][int(par)]
+            if not df is None:
+                
+                print("--- dataset %s ---" %(par))
+                print(odMgr.od_df.loc[int(par)])
+                print(df.loc[0:5])
+                print(df.columns)
+                #print(df.describe())
+                
+    def do_test(self,line):
+        """current test"""
+        odMgr = OpenDataMgr()
+        river_df = odMgr.get_riverlist()
+        print(river_df.head())
+        
     def do_about(self, line):
         """About this software"""
         print("%s version: v%s" %(WKG_TITLE,WKG_VERSION))

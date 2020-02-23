@@ -11,6 +11,7 @@ import lib.globalclasses as gc
 from lib.const import *
 
 ##### Code section #####
+# get wikidata by query
 def wikidata_get():
     import requests
     
@@ -98,6 +99,7 @@ def opendata_getbynet(b_print = False):
     if b_print:
         print(data)
 
+#generate river list
 #河川代碼: https://data.gov.tw/dataset/22228     
 #return {['Id','Name','EName','ToId','GId'],[]} 
 def opendata_get(b_print = False):
@@ -223,4 +225,32 @@ def river_comapre():
     print("---in (wikidata_rivername and opendata_rivername)---")
     print( "\n".join(union_set))
 
-
+#generate colname to dataset reverse map
+#dataset_id, dataset_name, colname 
+def opendata_colmap():
+    #load
+    import pandas as pd 
+    #name_filter = ["NAME"]
+    df = pd.read_csv("include/政府開放資料 - 水利署.csv") 
+    # Preview the first 5 lines of the loaded data 
+    print(df.head())
+    
+    col_detail = {}
+    print("--- %s,%s,%s ---" %("資料集識別碼","資料集名稱","欄位"))
+    for index, row in df.iterrows():
+        #print(row['資料集識別碼'], row['資料集名稱'], row['主要欄位說明'])
+        if row['檔案格式'].find("CSV")>=0:
+            col_str = row['主要欄位說明']
+            
+            cols = col_str.split(";")
+            for col in cols:
+                #if not col in name_filter:
+                print("%s,%s,%s" %(row['資料集識別碼'],row['資料集名稱'],col))
+                if col in col_detail:
+                    col_detail[col].append(row['資料集名稱'])
+                else:
+                    col_detail[col] = [row['資料集名稱']]
+    print("--- %s,%s ---" %("欄位","有使用資料集名稱"))
+    for key in col_detail:
+        print("%s,%s"%(key,"|".join(col_detail[key])))    
+    
