@@ -50,6 +50,7 @@ class OpenDataMgr():
         self.river_df = None 
         self.rivercode_df = None
         self.colname_df = None
+        self.term_df = pd.read_csv("include/term.csv") 
         
     
     def url_to_file(self,url,pathname,reload=False):
@@ -64,6 +65,7 @@ class OpenDataMgr():
 
     def get_dataset(self,dataset_id): #integer
         if not dataset_id in self.od_df.index:
+            print("%i 資料集不存在" %(dataset_id))
             return None
         type_str = self.od_df['檔案格式'][dataset_id]
         types = type_str.split(";")
@@ -81,6 +83,7 @@ class OpenDataMgr():
             self.od_df['df'][dataset_id]=df
             return df
         else:
+            print("%i 資料集沒有 CSV 格式，無法載入" %(dataset_id))
             return None
     def get_riverlist(self):
         did = 22228
@@ -135,7 +138,57 @@ class OpenDataMgr():
         self.colname_df = pd.DataFrame(desc['主要欄位說明'].str.split(';').tolist(), index=desc['資料集名稱']).stack() 
         self.colname_df = self.colname_df.reset_index([0, '資料集名稱'])
         self.colname_df.columns = ['資料集名稱', 'Colname'] 
-        return self.colname_df           
+        return self.colname_df
+    # generate dot , col->資料集名稱
+    # while == True: 只產生白名單的
+    # 其他 count >= count_min, not in term.欄位忽略詞 
+    
+    def gen_col_tree(self, white, count_min=5):
+        if white:
+            # 需要的詞
+            mon_s=self.term_df['觀察欄位詞'].dropna().reset_index([0],'觀察欄位詞')
+
+        else:
+            #欄位 count > 5
+            colname_groupby_df = colname_df.groupby('Colname')['資料集名稱'].count().sort_values(ascending=False)
+            freq_df = colname_groupby_df[colname_groupby_df>=count_min]
+    
+            # 需要忽略的詞
+            ignore_df=self.term_df['欄位忽略詞'].dropna().reset_index([0],'欄位忽略詞')
+            
+            # 剩要處理的詞        
+            mon_list = list(set(freq_df.index) - set(ignore_df.values))
+            mon_s = pd.Series(mon_list) 
+        
+        # 要處理的 colname 資訊
+        dot_df=colname_df[colname_df['Colname'].isin(mon_s.values)]
+        
+        # 格式化輸出        
+        myprint = lambda row: "\"%s\" -> \"%s\";" %(row[1],row[0]) 
+        print("digraph G {\n")       
+        print(dot_df.apply(myprint, axis=1).to_string(index=False))
+        print("}\n")
+    def test(self):
+        import matplotlib.pyplot as plt
+        from matplotlib.font_manager import FontProperties
+        import numpy as np
+        df=self.get_dataset(6504)
+        myfont = FontProperties(fname=r'/Library/Fonts/Microsoft/SimSun.ttf')
+        df.plot('地區','牙醫數')
+        #df.plot()
+        #df.plot(x='地區',y='牙醫數')
+        df.plot(x='地區',y='病床數',kind='bar') #line type have problem
+        plt.title("測試",fontproperties=myfont) 
+        plt.ylabel('地區',fontproperties=myfont)
+        plt.xlabel('病床數',fontproperties=myfont)
+        #plt.yticks(fontproperties=myfont)
+        #plt.xticks(np.arange(0, 1, step=0.2))
+        #plt.xticks(size='small',rotation=30,fontproperties=myfont)
+        plt.legend(prop=myfont)
+        plt.xticks(fontname = 'SimSun',size=8)
+        plt.yticks(fontname = 'SimSun',size=8)
+        #plt.show()
+        plt.show()       
     def desc(self, desc_id):
         pass
 # Interactive mode
@@ -147,5 +200,7 @@ if sys.argv[0] == '':
     river_df = odMgr.get_riverlist()
     rivercode_df = odMgr.rivercode_df
     colname_df = odMgr.get_colmap()
+    term_df = odMgr.term_df
     print("OpenDataMgr inited for interactive used")
-    print("odMgr,od_df,rivercode_df,river_df,colname_df variable ready")
+    print("odMgr,od_df,rivercode_df,river_df,colname_df,term_df variable ready")
+    #odMgr.gen_col_tree(False,5)

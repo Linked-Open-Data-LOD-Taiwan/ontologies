@@ -101,8 +101,9 @@ class Cli(cmd.Cmd):
     def do_test(self,line):
         """current test"""
         odMgr = OpenDataMgr()
-        river_df = odMgr.get_riverlist()
-        print(river_df.head())
+        odMgr.test()
+        #river_df = odMgr.get_riverlist()
+        #print(river_df.head())
         
     def do_about(self, line):
         """About this software"""
