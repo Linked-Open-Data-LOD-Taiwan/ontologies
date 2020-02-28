@@ -13,14 +13,108 @@ from collections import OrderedDict
 #extend
 import pandas as pd 
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+import requests
+import json
 
 #library
 import lib.globalclasses as gc
 from lib.const import *
 
+wiki_query_str= """
+            SELECT DISTINCT ?river ?riverLabel ?destLabel ?river_length ?riverAltLabel WHERE {
+          ?river wdt:P17 wd:Q865;
+            wdt:P31 wd:Q4022.
+            OPTIONAL {?river wdt:P403 ?dest.}
+            OPTIONAL {?river wdt:P2043 ?river_length.}
+          
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "zh". }
+        }
+        ORDER BY DESC(?length)
+            """
 ##### Code section #####
 #Spec: manage opendata
 #How/NeedToKnow:
+class DataMgr():
+    def __init__(self):
+        self.d_df = pd.read_csv("include/dbs.csv")
+        
+        self.d_df['wkg_obj'] = None
+        self.d_df['wkg_df'] = None
+
+        for index, row in self.d_df.iterrows():
+            #print(row['資料集識別碼'], row['資料集名稱'], row['主要欄位說明'])
+            list_url = [row['url'],row['local_file']]
+            print(list_url)
+            name = row['name']
+            if name=="go":
+                mgr = OpenDataMgr(list_url)
+                self.odMgr = mgr
+            elif name=="ld":
+                list_url = [None,row['local_file']]
+                mgr = LocalDataMgr(list_url)
+                self.ldMgr = mgr
+            else:
+                mgr = DataMgr(list_url)
+            self.d_df['wkg_obj'][name] = mgr
+            self.d_df['wkg_df'][name] = mgr.df
+        self.d_df.set_index('name', inplace=True)
+        
+
+#Spec: manage opendata
+#How/NeedToKnow:
+class DataMgrBase():
+    def __init__(self,list_url):
+        if list_url[0] is None:
+            self.df = pd.read_csv("include/" + list_url[1])
+        else:
+            self.url_to_file(list_url[0], 'output/' +list_url[1] )
+            self.df = pd.read_csv("output/" + list_url[1] )
+    def url_to_file(self,url,pathname,reload=False):
+        print("url_to_file: url=%s, pathname=%s" %(url,pathname))
+        need_load= True
+        if reload==False and os.path.isfile(pathname) :
+            need_load = False
+        if need_load:
+            r = requests.get(url, allow_redirects=True,verify=False)
+            open(pathname, 'wb').write(r.content)
+
+#Spec: manage opendata
+#How/NeedToKnow:
+class LocalDataMgr(DataMgrBase):
+    def __init__(self,list_url):
+        DataMgrBase.__init__(self,list_url)
+        self.ld_df = self.df
+        self.ld_df['wkg_df'] = None
+        self.load_localdf(False)
+        self.ld_df.set_index('name', inplace=True)
+    def load_df(self,dfname):
+        row =self.ld_df.loc[dfname]
+        url = row['url']
+        dir = "include/"
+        if not pd.isnull(url):
+            dir = "output/"
+            self.url_to_file(row['url'], dir +row['local_file'] )
+        df = pd.read_csv(dir + row['local_file'] )
+        self.ld_df['wkg_df'][dfname]=df
+        return df
+    def load_localdf(self, need_load=False):
+        df_list = []
+        for index, row in self.ld_df.iterrows():
+            #print("index=%s,local_file=%s" %(index,row['local_file']))
+            if pd.isnull(row['url']):
+                #print("%s" % (row['local_file']))
+                df = pd.read_csv("include/" + row['local_file'] )
+                df_list.append(df)
+            else:
+                if need_load:
+                    self.url_to_file(row['url'], 'output/' +row['local_file'] )
+                    df = pd.read_csv("output/" + row['local_file'] )
+                    df_list.append(df)
+                else:
+                    df_list.append(None)
+        self.ld_df['wkg_df'] = df_list
 """
 from codes.opendata import *
 odMgr = OpenDataMgr()
@@ -34,15 +128,17 @@ odMgr.od_df['df'][did].head()
 #odMgr.od_df.at[did,'資料集名稱']
 
 """
-class OpenDataMgr():
-    def __init__(self):
+#Spec: manage opendata
+#How/NeedToKnow:
+
+class OpenDataMgr(DataMgrBase):
+    def __init__(self,list_url):
         #private
-        opendata_list_url = ["https://data.gov.tw/datasets/export/csv?type=dataset&order=pubdate&qs=&uid=",'opendata_list.csv']
         
         #global: these variables allow to direct access from outside.
-        self.url_to_file(opendata_list_url[0], 'output/' +opendata_list_url[1] )
 
-        self.od_df = pd.read_csv("output/" + opendata_list_url[1] ) 
+        DataMgrBase.__init__(self,list_url) 
+        self.od_df = self.df
         self.od_df.set_index('資料集識別碼', inplace=True)
         self.od_df.sort_values(by=['資料集識別碼'], inplace=True,ascending=True)
         self.od_df['df'] = None # init new column to store dataframe
@@ -53,17 +149,9 @@ class OpenDataMgr():
         self.term_df = pd.read_csv("include/term.csv") 
         
     
-    def url_to_file(self,url,pathname,reload=False):
-
-        need_load= True
-        if reload==False and os.path.isfile(pathname) :
-            need_load = False
-        if need_load:
-            r = requests.get(url, allow_redirects=True,verify=False)
-            open(pathname, 'wb').write(r.content)
 
 
-    def get_dataset(self,dataset_id): #integer
+    def get_dataset(self,dataset_id,force=False): #integer
         if not dataset_id in self.od_df.index:
             print("%i 資料集不存在" %(dataset_id))
             return None
@@ -169,9 +257,7 @@ class OpenDataMgr():
         print(dot_df.apply(myprint, axis=1).to_string(index=False))
         print("}\n")
     def test(self):
-        import matplotlib.pyplot as plt
-        from matplotlib.font_manager import FontProperties
-        import numpy as np
+
         df=self.get_dataset(6504)
         myfont = FontProperties(fname=r'/Library/Fonts/Microsoft/SimSun.ttf')
         df.plot('地區','牙醫數')
@@ -191,16 +277,51 @@ class OpenDataMgr():
         plt.show()       
     def desc(self, desc_id):
         pass
+
+
+class WikiDataMgr():
+    def __init__(self):
+        pass
+
+        
+    def wikidata_get(self,filename,query):
+        url = 'https://query.wikidata.org/sparql'
+        if not os.path.isfile('output/' + filename):
+            r = requests.get(url, params = {'format': 'json', 'query': query})
+            #r = requests.get(url, allow_redirects=True)
+            open('output/' + filename, 'wb').write(r.content)
+        #df = pd.read_csv("output/wikidata.csv")
+    def load_json(self,filename):
+        with open('output/' + filename, 'r') as json_file:
+            data = json.load(json_file)
+        #data = json.loads('output/' + filename)
+        #processed_results = json.load(result.response)
+        cols = data['head']['vars']
+    
+        out = []
+        for row in data['results']['bindings']:
+            item = []
+            for c in cols:
+                item.append(row.get(c, {}).get('value'))
+            out.append(item)
+    
+        return pd.DataFrame(out, columns=cols)
+        #return pd.read_json('output/' + filename)
 # Interactive mode
 # from codes.opendata import *
 if sys.argv[0] == '':
     #interactive
-    odMgr = OpenDataMgr()
-    od_df = odMgr.od_df
+    dMgr = DataMgr()
+    d_df= dMgr.d_df
+    odMgr = dMgr.odMgr
+    ldMgr = dMgr.ldMgr
+    od_df = dMgr.odMgr.od_df
+    ld_df = dMgr.ldMgr.ld_df
+
     river_df = odMgr.get_riverlist()
     rivercode_df = odMgr.rivercode_df
     colname_df = odMgr.get_colmap()
-    term_df = odMgr.term_df
-    print("OpenDataMgr inited for interactive used")
-    print("odMgr,od_df,rivercode_df,river_df,colname_df,term_df variable ready")
+    term_df = ld_df['wkg_df']['term']
+    print("DataMgr inited for interactive used")
+    print("dMgr,odMgr,ldMgr,od_df,ld_df,rivercode_df,river_df,colname_df,term_df variable ready")
     #odMgr.gen_col_tree(False,5)

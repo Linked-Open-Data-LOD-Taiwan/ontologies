@@ -5,12 +5,19 @@ http://bit.ly/2NL7SVR
 水知識圖譜-資料處理腳本
 http://bit.ly/39MUedy
 
-## Current version: V0.0.3
+## Current version: V0.1
 
 ## By Version:
+### V0.1 
+* 使用與管理本地與自訂 url 資料
+* 支援 Wikidata query service 
+* Log: 學習 TEDS 分析
+
 ### V0.0.3
 * provide column name used in dataset
-* support local term table by CSV 
+* support local term table by CSV
+* generate column map tree
+* more usage examples by Jupyter notebook
 
 
 ### V0.0.2
