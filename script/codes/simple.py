@@ -253,4 +253,43 @@ def opendata_colmap():
     print("--- %s,%s ---" %("欄位","有使用資料集名稱"))
     for key in col_detail:
         print("%s,%s"%(key,"|".join(col_detail[key])))    
+
+#http://religion.moi.gov.tw/Report/temple.xml    
+"""
+<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfOpenData_3 xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <OpenData_3>
+    <寺廟名稱>竹圍仔福德祠</寺廟名稱>
+    <主祀神祇>福德正神</主祀神祇>
+    <行政區>臺南市</行政區>
+    <地址>臺南市白河區大竹里14鄰大排竹206號</地址>
+    <教別>道教</教別>
+    <建別>適用監督寺廟條例寺廟</建別>
+    <組織型態>管理人(住持)制</組織型態>
+    <電話>06-6851562</電話>
+    <負責人>錢玉珠</負責人>
+    <其他 />
+    <WGS84X>120.396797180176</WGS84X>
+    <WGS84Y>23.3648853302002</WGS84Y>
+  </OpenData_3>
+"""
+def xml_to_df(filename):
+    import pandas as pd 
+    import xml.etree.ElementTree as etree
     
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    
+    dataname = root[0].tag #FIME: need more check no data
+    colnames = []
+    for name in root[0]:
+        colnames.append(name.tag)
+    df = pd.DataFrame(columns = colnames)
+    for member in root.findall(dataname):
+        cols = []
+        for i in range(len(colnames)):
+            result = member.find(colnames[i])
+            cols.append(result.text if result is not None else None)
+        df = df.append(pd.Series(cols, index = colnames), ignore_index = True)
+    return df
+#xml_to_df()

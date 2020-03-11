@@ -10,8 +10,11 @@ import requests
 import os.path
 import sys
 from collections import OrderedDict
+import xml.etree.ElementTree as etree
+
 #extend
 import pandas as pd 
+import pandasql as ps
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
@@ -34,6 +37,33 @@ wiki_query_str= """
         ORDER BY DESC(?length)
             """
 ##### Code section #####
+def xml_to_df(filename):
+    
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    
+    dataname = root[0].tag #FIME: need more check no data
+    colnames = []
+    for name in root[0]:
+        colnames.append(name.tag)
+    df = pd.DataFrame(columns = colnames)
+    for member in root.findall(dataname):
+        cols = []
+        for i in range(len(colnames)):
+            result = member.find(colnames[i])
+            cols.append(result.text if result is not None else None)
+        df = df.append(pd.Series(cols, index = colnames), ignore_index = True)
+    return df
+
+
+#temple_df = xml_to_df("dataset/TEDS/8203_temple.xml",["寺廟名稱", "主祀神祇", "行政區","地址","教別","建別","組織型態","電話","負責人","其他","WGS84X","WGS84Y"])
+#temple_df.to_csv('output/temple.csv')
+
+#church_df = xml_to_df("dataset/church.xml")
+
+#church_df = xml_to_df("dataset/church.xml",'OpenData_4',["教會名稱", "行政區", "地址","負責人","WGS84X","WGS84Y"])
+#church_df.to_csv('output/church.csv')
+
 #Spec: manage opendata
 #How/NeedToKnow:
 class DataMgr():
@@ -150,28 +180,47 @@ class OpenDataMgr(DataMgrBase):
         
     
 
-
+    def get_datasets(self,dataset_ids,force=False): # dataset_ids: [ int, ... ]
+        dfs = []
+        for dataset_id in dataset_ids:
+            dfs.append(self.get_dataset(dataset_id, force))
+        return dfs
+    # CSV > XML
     def get_dataset(self,dataset_id,force=False): #integer
         if not dataset_id in self.od_df.index:
             print("%i 資料集不存在" %(dataset_id))
             return None
         type_str = self.od_df['檔案格式'][dataset_id]
+        name = self.od_df['資料集名稱'][dataset_id]
         types = type_str.split(";")
         pos = 0
-        for type in types:
-            if type == "CSV":
-                break
+        pos_csv = -1
+        pos_xml = -1
+        for typename in types:
+            if typename == "CSV":
+                pos_csv = pos               
+            if typename == "XML":
+                pos_xml = pos
             pos +=1
-        if pos < len(types):
+        print("pos_csv=%i,pos_xml=%i" %(pos_csv,pos_xml))   
+        if pos_csv >=0 or pos_xml>=0 :
             download_str = self.od_df['資料下載網址'][dataset_id]
             urls = download_str.split(";")
-            
-            self.url_to_file(urls[pos],"output/%s.csv" %( dataset_id))
-            df = pd.read_csv("output/%s.csv" %( dataset_id ))
+            if pos_csv >=0:
+                filename = "output/%s-%s.csv" %( dataset_id, name)
+                self.url_to_file(urls[pos_csv],filename,force)
+                df = pd.read_csv(filename)
+                
+            else: #XML
+                filename = "output/%s-%s.xml" %( dataset_id, name)
+                self.url_to_file(urls[pos_xml],filename,force)
+                df = xml_to_df(filename)
+                #df = pd.read_csv("output/%s.csv" %( dataset_id ))
             self.od_df['df'][dataset_id]=df
+                
             return df
         else:
-            print("%i 資料集沒有 CSV 格式，無法載入" %(dataset_id))
+            print("%i 資料集沒有 CSV,XML 格式，無法載入" %(dataset_id))
             return None
     def get_riverlist(self):
         did = 22228
@@ -181,7 +230,7 @@ class OpenDataMgr(DataMgrBase):
             ['SubSubSubsidiaryBasinIdentifier','SubSubSubsidiaryBasinName','EnglishSubSubSubsidiaryBasinName']]
         #print(title)
     
-        self.get_dataset(did)
+        self.get_dataset(did,False)
         self.rivercode_df = self.od_df['df'][did]
         
         rivers = [] # Id,[name, EName, ToId]
@@ -217,10 +266,13 @@ class OpenDataMgr(DataMgrBase):
         self.river_df.set_index('Id', inplace=True)
         #print(self.river_df)
         return self.river_df
-    def get_colmap(self):
+    def get_colmap(self,od_df=None):
 
-        wra=self.od_df[self.od_df['提供機關']=='經濟部水利署']
-        desc=wra[['資料集名稱','主要欄位說明']]
+        #wra=self.od_df[self.od_df['提供機關']=='經濟部水利署']
+        #desc=wra[['資料集名稱','主要欄位說明']]
+        if od_df is None:
+            od_df = self.od_df
+        desc=od_df[['資料集名稱','主要欄位說明']]
         desc=desc.dropna()
         
         self.colname_df = pd.DataFrame(desc['主要欄位說明'].str.split(';').tolist(), index=desc['資料集名稱']).stack() 
@@ -238,7 +290,7 @@ class OpenDataMgr(DataMgrBase):
 
         else:
             #欄位 count > 5
-            colname_groupby_df = colname_df.groupby('Colname')['資料集名稱'].count().sort_values(ascending=False)
+            colname_groupby_df = self.colname_df.groupby('Colname')['資料集名稱'].count().sort_values(ascending=False)
             freq_df = colname_groupby_df[colname_groupby_df>=count_min]
     
             # 需要忽略的詞
@@ -249,7 +301,7 @@ class OpenDataMgr(DataMgrBase):
             mon_s = pd.Series(mon_list) 
         
         # 要處理的 colname 資訊
-        dot_df=colname_df[colname_df['Colname'].isin(mon_s.values)]
+        dot_df=self.colname_df[self.colname_df['Colname'].isin(mon_s.values)]
         
         # 格式化輸出        
         myprint = lambda row: "\"%s\" -> \"%s\";" %(row[1],row[0]) 

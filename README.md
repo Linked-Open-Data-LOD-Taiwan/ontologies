@@ -8,6 +8,11 @@ http://bit.ly/39MUedy
 ## Current version: V0.1
 
 ## By Version:
+### V0.1.1
+* support XML import to df 
+* testing pandasql
+* testing distance between station with temple
+
 ### V0.1 
 * 使用與管理本地與自訂 url 資料
 * 支援 Wikidata query service 
