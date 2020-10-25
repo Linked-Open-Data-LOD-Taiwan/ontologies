@@ -133,6 +133,9 @@ class LocalDataMgr(DataMgrBase):
         return df
     # download user define link to file
     def user_download(self,set_filename):
+        """
+            可提供一個檔案，指定要下載的相關資訊與指引，然後下載全部
+        """
         self.user_download_df = pd.read_csv(set_filename)
         #op    file_type    local_file    encoding    projection    url
         for index, row in self.user_download_df.iterrows():
@@ -229,9 +232,13 @@ class OpenDataMgr(DataMgrBase):
             print("output/download_op.csv outputed!")
     
     def unzip_zips_indir(self,search_dir):
-    """
         
-    """
+        
+        """
+            在指定目錄中，找下面的 zip 檔，解開到一暫存目錄，然後將裡面唯一的目錄，改名成跟 zip 檔名一樣
+            目前用在 水利署 shp 檔，所以原目錄名稱原則上為 英文名稱，需要被保留。所以附在新目錄名稱中
+            執行完畢，tmp 目錄會遺留下來，也可以手動刪除
+        """
         #setup
         extract_dir =  "%s/tmp" %(search_dir)
         if not os.path.exists(extract_dir):
@@ -296,8 +303,14 @@ class OpenDataMgr(DataMgrBase):
             
         
     def get_dataset(self,dataset_id,force=False): #integer
+        """
+            找 dataset 的資料，有 CSV 先下載，然後是 XML, 然後是 KML
+            如果 CSV 內提供 KML, SHP 連結，正常也會解析後下載
+            下載過程會準備填回 download_op_df, 可以當作下載的輔助資料
+        """
         real_filetype=""
         #localfile="" #filename
+        filename =""
         status = "OK"
         url=""
         sys_memo_str=""
@@ -378,7 +391,7 @@ class OpenDataMgr(DataMgrBase):
                                     sys_memo_str = "%s\n%s" %(sys_memo_str,sys_memo_str1)
                                     #self.update_downloadop(dataset_id,'real_filetype',real_filetype.upper())
                         #self.update_downloadop(dataset_id,'sys_memo',sys_memo_str,False)
-                        self.status_list = [real_filetype.upper(),filename,status,url,sys_memo_str]
+                    self.status_list = [real_filetype.upper(),filename,status,url,sys_memo_str]
 
                 except:
                     sys_memo_str1 = "ERROR: %s have exception" %(filename)
