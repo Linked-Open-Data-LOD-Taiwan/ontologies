@@ -1,0 +1,5 @@
+name,file_type,local_file,url,encoding
+term,CSV,term.csv,,utf-8
+gov_statistics,CSV,gov_statistics.csv,https://data.gov.tw/statistics/datasets/datasets/export/csv,utf-8
+river_community,CSV,社群共筆河川關鍵字資料庫.csv,,utf-8
+排放量申報資料_108,CSV,排放量申報資料_108.csv,http://aodfmis.epa.gov.tw/dispose/csv/排放量申報資料_108.csv,big5

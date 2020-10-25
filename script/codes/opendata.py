@@ -9,6 +9,8 @@
 import requests
 import os.path
 import sys
+import os
+import zipfile
 from collections import OrderedDict
 import xml.etree.ElementTree as etree
 
@@ -99,7 +101,7 @@ class DataMgrBase():
         if list_url[0] is None:
             self.df = pd.read_csv("include/" + list_url[1])
         else:
-            self.url_to_file(list_url[0], 'output/' +list_url[1] )
+            self.url_to_file(list_url[0], 'output/' +list_url[1],False )
             self.df = pd.read_csv("output/" + list_url[1] )
     def url_to_file(self,url,pathname,reload=False):
         print("url_to_file: url=%s, pathname=%s" %(url,pathname))
@@ -129,6 +131,13 @@ class LocalDataMgr(DataMgrBase):
         df = pd.read_csv(dir + row['local_file'] )
         self.ld_df['wkg_df'][dfname]=df
         return df
+    # download user define link to file
+    def user_download(self,set_filename):
+        self.user_download_df = pd.read_csv(set_filename)
+        #op    file_type    local_file    encoding    projection    url
+        for index, row in self.user_download_df.iterrows():
+            if row['op']!='SKIP':
+                self.url_to_file(row['url'], 'output/' +row['local_file'] )
     def load_localdf(self, need_load=False):
         df_list = []
         for index, row in self.ld_df.iterrows():
@@ -176,51 +185,231 @@ class OpenDataMgr(DataMgrBase):
         self.river_df = None 
         self.rivercode_df = None
         self.colname_df = None
-        self.term_df = pd.read_csv("include/term.csv") 
+        self.download_op_df = None # config, status information while download
+        self.download_op = "" # transfer current download op, not interference to current code
+        self.status_list = ["","","","",""]  #status_list=[real_filetype,localfile,status,last_url,sys_memo]
+            #collect this dataset information status
         
-    
+        self.term_df = pd.read_csv("include/term.csv")     
 
+    def get_datasets_by_downloadop(self):
+        """
+            follow op from download_op_cfg.csv, collection information found while downloading.
+            use self.download_op_df,self.download_op,self.status_list
+        """
+        self.download_op_df = pd.read_csv("include/download_op_cfg.csv")
+        #dataset_id    dataset_name    op    group    user_memo    encoding    projection    real_filetype    localfile    status    last_url    sys_memo
+        for index, row in self.download_op_df.iterrows():
+            if row['op']!='SKIP':
+                self.download_op = row['op']
+                self.get_dataset(row['dataset_id'],False)
+                self.update_downloadop_statusinfo(row['dataset_id'], self.status_list)
+    
+    def update_downloadop_statusinfo(self,dataset_id,status_list):
+        """
+            #status_list=[real_filetype,localfile,status,last_url,sys_memo]
+        """
+        
+        if self.download_op_df is not None:
+             mask = (self.download_op_df['dataset_id']==dataset_id)
+             self.download_op_df.loc[mask,['real_filetype','localfile','status','last_url','sys_memo']]=status_list
+    # update one column of one dataset
+    def update_downloadop(self,dataset_id,col_name, value, b_append=False):
+        if self.download_op_df is not None:
+            mask = (self.download_op_df['dataset_id']==dataset_id)
+            if b_append:
+                #self.download_op_df.loc[self.download_op_df['dataset_id']==dataset_id,col_name]=self.download_op_df[col_name] + "\n" + value
+                self.download_op_df.loc[mask,col_name]="%s\n%s" %(self.download_op_df.loc[mask,col_name] ,value)
+            else:
+                self.download_op_df.loc[mask,col_name]=value
+    #save result to filiie
+    def output_downloadop(self):
+        if self.download_op_df is not None:
+            self.download_op_df.to_csv("output/download_op.csv")
+            print("output/download_op.csv outputed!")
+    
+    def unzip_zips_indir(self,search_dir):
+    """
+        
+    """
+        #setup
+        extract_dir =  "%s/tmp" %(search_dir)
+        if not os.path.exists(extract_dir):
+            os.makedirs(extract_dir)
+        target_dir="%s/zip" %(search_dir)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+    
+        for dirpath, dirnames, filenames in os.walk(search_dir):
+            #print("dirpath=%s\ndirnames=%s\nfilenames=%s" %(dirpath, dirnames, filenames))
+            for filename in [f for f in filenames if f.endswith(".zip")]: #"25776-水庫堰壩位置圖.zip"
+                zip_file = os.path.join(dirpath, filename)   
+                
+                #extract zip
+                print("extracting %s" %(zip_file))
+                with zipfile.ZipFile(zip_file,"r") as zip_ref:
+                    zip_ref.extractall(extract_dir) 
+                dirs = os.listdir(extract_dir)
+                basename = os.path.basename(zip_file)    
+                base = os. path. splitext(basename)[0] 
+                
+                if os.path.isdir(dirs[0]):
+                    old_path = "%s/%s" %(extract_dir,dirs[0])
+                    new_path = "%s/%s-%s" %(target_dir,base,dirs[0]) 
+                    if os.path.isdir(old_path): 
+                        os.rename(old_path,new_path)
+                    #else:
+                    #    print("%s not normal format, dirs=%s" %(zip_file,str(dirs)))
+                else:
+                    #move all to new dir    
+                    ename = os. path. splitext(dirs[0])[0]
+                    new_path = "%s/%s-%s" %(target_dir,base, ename) 
+                    if not os.path.exists(new_path):
+                        os.makedirs(new_path)
+                    for file in dirs:
+                        old_path = "%s/%s" %(extract_dir,file)
+                        new_file = "%s/%s" %(new_path,file)
+                        os.rename(old_path,new_file)
+                print("done %s" %(zip_file))
+                #time.sleep(3)
     def get_datasets(self,dataset_ids,force=False): # dataset_ids: [ int, ... ]
         dfs = []
         for dataset_id in dataset_ids:
             dfs.append(self.get_dataset(dataset_id, force))
         return dfs
     # CSV > XML
+    def download_info_fromdf(self,ser,file_type): #return [typename,encode,url]
+        type_str = str(ser['檔案格式'])
+        types = type_str.split(";")
+        pos = 0
+        for typename in types:
+            if typename == file_type:
+                break               
+            pos +=1
+        if pos<len(types):
+            encode_str = str(ser['編碼格式'])
+            encodes = encode_str.split(";")
+            download_str = str(ser['資料下載網址'])
+            urls = download_str.split(";")
+            return [typename,encodes[pos],urls[pos]]
+        return None
+            
+        
     def get_dataset(self,dataset_id,force=False): #integer
+        real_filetype=""
+        #localfile="" #filename
+        status = "OK"
+        url=""
+        sys_memo_str=""
+        #self.status_list = [real_filetype,filename,status,url,sys_memo_str]
         if not dataset_id in self.od_df.index:
             print("%i 資料集不存在" %(dataset_id))
             return None
         type_str = self.od_df['檔案格式'][dataset_id]
+        encode_str = self.od_df['編碼格式'][dataset_id] 
         name = self.od_df['資料集名稱'][dataset_id]
         types = type_str.split(";")
+        encodes = encode_str.split(";")
         pos = 0
         pos_csv = -1
         pos_xml = -1
+        pos_kml = -1
         for typename in types:
             if typename == "CSV":
                 pos_csv = pos               
             if typename == "XML":
                 pos_xml = pos
+            if typename == "KML":
+                pos_kml = pos
             pos +=1
-        print("pos_csv=%i,pos_xml=%i" %(pos_csv,pos_xml))   
-        if pos_csv >=0 or pos_xml>=0 :
+        print("pos_csv=%i,pos_xml=%i,pos_kml=%i" %(pos_csv,pos_xml,pos_kml))   
+        if pos_csv >=0 or pos_xml>=0 or pos_kml>=0:
             download_str = self.od_df['資料下載網址'][dataset_id]
             urls = download_str.split(";")
             if pos_csv >=0:
+                real_filetype="CSV"
                 filename = "output/%s-%s.csv" %( dataset_id, name)
-                self.url_to_file(urls[pos_csv],filename,force)
-                df = pd.read_csv(filename)
+                #self.update_downloadop(dataset_id,'real_filetype','CSV')
+                url = urls[pos_csv]
+                self.url_to_file(url,filename,force)
                 
-            else: #XML
+                try:
+                    if os.stat(filename).st_size == 0:
+                        
+                        self.status_list = [real_filetype,filename,"KO",url,"ERROR: file size = 0 "]
+                        #self.update_downloadop(dataset_id,'sys_memo',,False)
+                        return None
+                    df = pd.read_csv(filename,encoding = encodes[pos_csv])
+                    sys_memo_str=""
+                    if len(df.index)<=10 or self.download_op=='DIG':
+                        sys_memo_str ="WARNING: %s only have %i rows" %(filename,len(df.index)) 
+                        print(sys_memo_str)
+                        
+                        #檔案描述    檔案格式    資源網址
+                        #formats= df[df['檔案格式']=='SHP'].values.tolist()
+                        if '檔案格式' in df.columns:
+                            for index, row in df.iterrows():
+                                format_str= row['檔案格式'].lower()
+                                if format_str=='kml' or format_str=='shp' or format_str=='7z': 
+                                    real_filetype = format_str
+                                    if format_str=='shp':
+                                        real_filetype = 'zip'
+                                        if index==0:
+                                            filename = "output/%s-%s.%s" %( dataset_id, name, real_filetype)
+                                        else:
+                                            filename = "output/%s-%s-%i.%s" %( dataset_id, name, index, real_filetype)
+                                        sys_memo_str1="Get additional SHP in ZIP:%s" %(filename) 
+                                    elif format_str=='kml':
+                                        if index==0:
+                                            filename = "output/%s-%s.%s" %( dataset_id, name, real_filetype)
+                                        else:
+                                            filename = "output/%s-%s-%i.%s" %( dataset_id, name, index, real_filetype)
+                                        sys_memo_str1="Get additional %s:%s" %(format_str.upper(),filename) 
+                                    else: #7z
+                                        if index==0:
+                                            filename = "output/%s-%s.%s" %( dataset_id, name, real_filetype)
+                                        else:
+                                            filename = "output/%s-%s-%i.%s" %( dataset_id, name, index, real_filetype)
+                                        sys_memo_str1="Get additional %s:%s" %(format_str.upper(),filename) 
+                                    url = row['資源網址']    
+                                    self.url_to_file(url,filename,force)
+                                    #self.update_downloadop(dataset_id,'last_url',url,False)
+                                    print(sys_memo_str1)
+                                    sys_memo_str = "%s\n%s" %(sys_memo_str,sys_memo_str1)
+                                    #self.update_downloadop(dataset_id,'real_filetype',real_filetype.upper())
+                        #self.update_downloadop(dataset_id,'sys_memo',sys_memo_str,False)
+                        self.status_list = [real_filetype.upper(),filename,status,url,sys_memo_str]
+
+                except:
+                    sys_memo_str1 = "ERROR: %s have exception" %(filename)
+                    print(sys_memo_str1)
+                    self.status_list = [real_filetype,filename,"KO",url,sys_memo_str1]
+                    return None
+            elif pos_xml>=0: #XML
+                real_filetype="XML"
                 filename = "output/%s-%s.xml" %( dataset_id, name)
-                self.url_to_file(urls[pos_xml],filename,force)
+                url = urls[pos_xml]
+                self.url_to_file(url,filename,force)
+                #self.update_downloadop(dataset_id,'last_url',url,False)
+                #self.update_downloadop(dataset_id,'real_filetype','XML')
                 df = xml_to_df(filename)
+                self.status_list = [real_filetype,filename,"OK",url,""]
                 #df = pd.read_csv("output/%s.csv" %( dataset_id ))
+            else: #KML
+                real_filetype="KML"
+                filename = "output/%s-%s.kml" %( dataset_id, name)
+                url = urls[pos_kml]
+                self.url_to_file(url,filename,force)
+                #self.update_downloadop(dataset_id,'real_filetype','KML')
+                #self.update_downloadop(dataset_id,'last_url',url,False)
+                print("%i 資料集為 KML 格式，已下載，無法載入成 df. 支援格式： %s" %(dataset_id,type_str))
+                self.status_list = [real_filetype,filename,"OK",url,""]
+                return None
             self.od_df['df'][dataset_id]=df
                 
             return df
         else:
-            print("%i 資料集沒有 CSV,XML 格式，無法載入" %(dataset_id))
+            print("%i-%s 資料集沒有 CSV,XML,KML 格式，無法載入. 支援格式： %s" %(dataset_id,name,type_str))
             return None
     def get_riverlist(self):
         did = 22228
@@ -272,12 +461,19 @@ class OpenDataMgr(DataMgrBase):
         #desc=wra[['資料集名稱','主要欄位說明']]
         if od_df is None:
             od_df = self.od_df
-        desc=od_df[['資料集名稱','主要欄位說明']]
+
+        df=od_df
+        df['ID'] = df.index
+        desc=df[['ID','主要欄位說明']]
         desc=desc.dropna()
+        df2 = pd.DataFrame(desc['主要欄位說明'].str.split(';').tolist(), index=desc['ID']).stack()
+        df2 = df2.reset_index([0, 'ID'])
+        df2.columns = ['DSID', 'Colname'] 
         
-        self.colname_df = pd.DataFrame(desc['主要欄位說明'].str.split(';').tolist(), index=desc['資料集名稱']).stack() 
-        self.colname_df = self.colname_df.reset_index([0, '資料集名稱'])
-        self.colname_df.columns = ['資料集名稱', 'Colname'] 
+        df3 = pd.merge(df2, self.od_df, left_on='DSID',right_on='資料集識別碼', how='left',left_index=True)
+        df3 = df3[['DSID','資料集名稱','Colname']]
+        self.colname_df = df3.reset_index(drop=True)
+        
         return self.colname_df
     # generate dot , col->資料集名稱
     # while == True: 只產生白名單的
