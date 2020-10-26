@@ -13,6 +13,7 @@ import os
 import zipfile
 from collections import OrderedDict
 import xml.etree.ElementTree as etree
+from urllib.parse import quote
 
 #extend
 import pandas as pd 
@@ -39,6 +40,13 @@ wiki_query_str= """
         ORDER BY DESC(?length)
             """
 ##### Code section #####
+def file_to_lines(pathname):
+    fo = open(pathname, "r")
+    #lines = fo.readlines()
+    lines = fo.read().splitlines()
+    fo.close()
+    return lines
+
 def xml_to_df(filename):
     
     tree = etree.parse(filename)
@@ -194,6 +202,75 @@ class OpenDataMgr(DataMgrBase):
             #collect this dataset information status
         
         self.term_df = pd.read_csv("include/term.csv")     
+    
+    def gen_filelist(self,file_type, search_dir, out_filename):
+        if file_type == 'CSV':
+            search_str = ".csv"
+        else:
+            search_str = ".shp"
+
+        outF = open(out_filename, "w")
+            
+        #walk and find file list
+        for dirpath, dirnames, filenames in os.walk(search_dir):
+            #print("dirpath=%s\ndirnames=%s\nfilenames=%s" %(dirpath, dirnames, filenames))
+            for filename in [f for f in filenames if f.endswith(search_str)]: #"25776-水庫堰壩位置圖.zip"
+                #csv_file = os.path.join(dirpath, filename)
+                csv_file = os.path.join(dirpath, filename)
+                
+                outF.write("%s\n" %(csv_file.replace(search_dir,".")))
+                #lines.append(csv_file)   
+        outF.close()
+        print("%s saved!"%(out_filename))
+
+    def gen_pyqgis_script(self, file_type, list_file):
+        
+        lines=file_to_lines(list_file) #csv file list
+        #lines=file_to_lines("/tmp/kml.txt") #kml fail, not work
+        #group define file
+        #group_df = pd.read_csv("/tmp/group.txt") #group define fiile
+        #dataset_id    架構分類
+        content =""
+        for line in lines:
+            #print("line=%s" %(line))
+            basename = os.path.basename(line)
+            base = os. path. splitext(basename)[0]
+            
+
+            
+            #CSV 產生 （input 可能為 filename）
+            #["output/rain-dailySum_2020.csv","rain-dailySum","&geomType=none"],
+            #["output/rain-station.csv","rain-station","&xField=lon&yField=lat&crs=EPSG:4326"],
+            #ＳＨＰ 產生
+            #["./hyctide/hyctide/hyctide.shp","hyctide-近海水文潮位站位置圖"],
+        
+            if file_type == 'CSV':
+                #using dataset_id to find group
+                #36689-河川復育英文版新聞
+                cols = base.split("-")
+                if not cols[0].isdigit():
+                    print("ERROR:%s format may not correct!" %(cols[0]))
+                    continue
+                dataset_id = int(cols[0])
+                #print("dataset_id=%i" %(dataset_id))
+                group_names = self.download_op_df[self.download_op_df['dataset_id']==dataset_id]['group'].values.tolist()
+                if len(group_names)>0:
+                    group_name = group_names[0]
+                else:
+                    group_name = ""
+                par="&geomType=none"
+ 
+                line_encoded = quote(line)
+                script_str = "[\"%s\",\"%s\",\"%s\",\"%s\"]," %(line_encoded,base,par,group_name) #CSV
+            else: #SHP
+        
+                cols = line.split("/")
+                name = cols[2]               
+                script_str = "[\"%s\",\"%s\"]," %(line,name)
+            content = "%s\n\t%s" %( content, script_str )
+            #script_str = "[\"%s\",\"%s\",\"%s\"]," %(line_encoded,base,group_name) #KML
+        script_var = "%s_pathnames = [\n%s\n]" % (file_type.lower(),content[:-1])
+        print(script_var)
 
     def get_datasets_by_downloadop(self):
         """
@@ -269,14 +346,18 @@ class OpenDataMgr(DataMgrBase):
                     #    print("%s not normal format, dirs=%s" %(zip_file,str(dirs)))
                 else:
                     #move all to new dir    
-                    ename = os. path. splitext(dirs[0])[0]
-                    new_path = "%s/%s-%s" %(target_dir,base, ename) 
-                    if not os.path.exists(new_path):
-                        os.makedirs(new_path)
+                    first=True
                     for file in dirs:
-                        old_path = "%s/%s" %(extract_dir,file)
-                        new_file = "%s/%s" %(new_path,file)
-                        os.rename(old_path,new_file)
+                        if not file ==".DS_Store":
+                            if first:
+                                ename = os.path.splitext(file)[0]
+                                new_path = "%s/%s-%s" %(target_dir,base, ename) 
+                                if not os.path.exists(new_path):
+                                    os.makedirs(new_path)
+                                first=False
+                            old_path = "%s/%s" %(extract_dir,file)
+                            new_file = "%s/%s" %(new_path,file)
+                            os.rename(old_path,new_file)
                 print("done %s" %(zip_file))
                 #time.sleep(3)
     def get_datasets(self,dataset_ids,force=False): # dataset_ids: [ int, ... ]
